@@ -1,0 +1,229 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Personal Insider</title>
+<style>
+*{box-sizing:border-box}body{margin:0;font-family:Arial,sans-serif;background:#f5f7fa;color:#172033}
+header{background:#102a43;color:white;padding:22px 28px;display:flex;justify-content:space-between;align-items:center}
+header h1{margin:0;font-size:24px}header span{font-size:14px;opacity:.85}
+main{max-width:1200px;margin:24px auto;padding:0 18px}
+.toolbar{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:18px}
+button{border:0;border-radius:8px;padding:11px 16px;cursor:pointer;font-weight:600}
+.primary{background:#1769aa;color:white}.secondary{background:white;border:1px solid #ccd5df}
+.cards{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:22px}
+.card{background:white;border:1px solid #e1e7ee;border-radius:12px;padding:18px}.card b{display:block;font-size:28px;margin-top:6px}
+.panel{background:white;border:1px solid #e1e7ee;border-radius:12px;overflow:hidden;margin-bottom:20px}
+.panel h2{font-size:18px;margin:0;padding:17px 18px;border-bottom:1px solid #e1e7ee}
+.tablewrap{overflow:auto}table{width:100%;border-collapse:collapse;min-width:900px}
+th,td{text-align:left;padding:13px 14px;border-bottom:1px solid #edf0f3;font-size:14px}
+table{table-layout:fixed}
+#rows td:nth-child(1),#rows th:nth-child(1),
+#moveRows td:nth-child(1),#moveRows th:nth-child(1),
+#depRows td:nth-child(1),#depRows th:nth-child(1){width:12%}
+#rows td:nth-child(2),#rows th:nth-child(2),
+#moveRows td:nth-child(3),#moveRows th:nth-child(3),
+#depRows td:nth-child(2),#depRows th:nth-child(2){width:18%}
+#rows td:nth-child(3),#rows th:nth-child(3),#rows td:nth-child(4),#rows th:nth-child(4){width:10%}
+#rows td:nth-child(5),#rows th:nth-child(5){width:12%}
+#rows td:nth-child(6),#rows th:nth-child(6){width:13%}
+#rows td:nth-child(7),#rows th:nth-child(7){width:16%}
+#rows td:nth-child(8),#rows th:nth-child(8){width:14%}
+#rows td:nth-child(9),#rows th:nth-child(9){width:11%}
+#rows td:nth-child(10),#rows th:nth-child(10){width:10%}
+#moveRows td:nth-child(2),#moveRows th:nth-child(2){width:15%}
+#moveRows td:nth-child(4),#moveRows th:nth-child(4){width:18%}
+#moveRows td:nth-child(5),#moveRows th:nth-child(5){width:12%}
+#moveRows td:nth-child(6),#moveRows th:nth-child(6){width:10%}
+#moveRows td:nth-child(7),#moveRows th:nth-child(7){width:17%}
+#depRows td:nth-child(3),#depRows th:nth-child(3){width:25%}
+#depRows td:nth-child(4),#depRows th:nth-child(4){width:23%}
+#depRows td:nth-child(5),#depRows th:nth-child(5){width:22%}
+th{background:#f8fafc;font-size:12px;text-transform:uppercase;color:#667085}
+.badge{padding:5px 8px;border-radius:20px;background:#edf6ff;color:#1769aa;font-size:12px;font-weight:700}
+.modal{display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);align-items:center;justify-content:center;padding:20px}
+.modal.open{display:flex}.box{background:white;border-radius:14px;padding:22px;width:min(620px,100%);max-height:90vh;overflow:auto}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}label{font-size:13px;font-weight:700;display:block}input,select,textarea{width:100%;margin-top:6px;padding:11px;border:1px solid #ccd5df;border-radius:8px;font:inherit}textarea{min-height:80px}.full{grid-column:1/-1}.actions{display:flex;justify-content:flex-end;gap:10px;margin-top:18px}
+.empty{padding:25px;text-align:center;color:#667085}
+@media(max-width:800px){.cards{grid-template-columns:repeat(2,1fr)}.grid{grid-template-columns:1fr}.full{grid-column:auto}}
+</style>
+</head>
+<body>
+<header><h1>🏨 Personal Insider</h1><span id="today"></span></header>
+<main>
+<div class="toolbar">
+<button class="primary" onclick="openGuest()">+ Add Guest</button>
+<button class="secondary" onclick="openMove()">+ Room Move</button>
+<button class="secondary" onclick="openDeparture()">+ Departure</button>
+<button class="secondary" onclick="clearAll()">Clear Demo Data</button>
+</div>
+<div style="margin:0 0 18px;color:#667085;font-size:13px">Enter guest details once in <b>Arrivals</b>. If you already know they will have a room move, select <b>Room Move Planned: Yes</b>; you can enter the new room and exact time later. The same record automatically flows to <b>In-House</b>, <b>Room Moves</b>, and <b>Departures</b> according to its dates. Guests are sorted by checkout date and are automatically removed after their checkout date has passed.</div>
+<div class="cards">
+<div class="card">In-House<b id="count">0</b></div>
+<div class="card">Celebrations<b id="celebrations">0</b></div>
+<div class="card">Room Moves<b id="moves">0</b></div>
+<div class="card">Departures<b id="departures">0</b></div>
+</div>
+<section class="panel">
+<h2>🛬 Arrivals — By Arrival Date</h2>
+<div class="tablewrap"><table><thead><tr>
+<th>Room</th><th>Guest</th><th>Arrival</th><th>Departure</th><th>Travel Agent</th><th>Celebration</th><th>Marriott Membership</th><th>EPIC Moment</th><th>Room Move</th><th>Status</th>
+</tr></thead><tbody id="arrivalRows"></tbody></table></div>
+<div id="arrivalEmpty" class="empty">No arrivals for today.</div>
+</section>
+
+<section class="panel">
+<h2>🏠 In-House — By Checkout Date</h2>
+<div class="tablewrap"><table><thead><tr>
+<th>Room</th><th>Guest</th><th>Arrival</th><th>Departure</th><th>Travel Agent</th><th>Celebration</th><th>Marriott Membership</th><th>EPIC Moment</th><th>Room Move</th><th>Status</th>
+</tr></thead><tbody id="rows"></tbody></table></div>
+<div id="empty" class="empty">No in-house guests yet.</div>
+</section>
+<section class="panel"><h2>🔄 Room Moves</h2><div class="tablewrap"><table><thead><tr><th>Room</th><th>New Room</th><th>Guest Name</th><th>Date</th><th>Time</th><th>Marriott Membership</th><th>Reason</th></tr></thead><tbody id="moveRows"></tbody></table></div></section>
+<section class="panel"><h2>🚪 Departures — Today</h2><div class="tablewrap"><table><thead><tr><th>Room</th><th>Guest</th><th>Checkout Date</th><th>Checkout Time</th><th>Marriott Membership</th></tr></thead><tbody id="depRows"></tbody></table></div></section>
+</main>
+
+
+<div class="modal" id="departureModal"><div class="box">
+<h2>🚪 Add Departure</h2>
+<form id="departureForm"><div class="grid">
+<label>Guest Name<input required name="name"></label>
+<label>Room Number<input required name="room"></label>
+<label>Marriott Membership<select name="member"><option>None</option><option>Member</option><option>Silver Elite</option><option>Gold Elite</option><option>Platinum Elite</option><option>Titanium Elite</option><option>Ambassador Elite</option></select></label>
+<label>Checkout Date<input type="date" required name="departure"></label>
+<label>Checkout Time<input type="time" required name="checkoutTime"></label>
+<label>Transfer / Transport<input name="transport" placeholder="Airport transfer, taxi..."></label>
+<label class="full">Notes<textarea name="notes"></textarea></label>
+<div class="full" style="font-size:13px;color:#667085;background:#f7f9fc;padding:10px;border-radius:8px">If Room Move Planned is <b>Yes</b>, save the guest now. When the new room and move time are confirmed, use the separate <b>+ Room Move</b> button.</div>
+</div><div class="actions"><button type="button" class="secondary" onclick="closeDeparture()">Cancel</button><button class="primary">Save Departure</button></div></form>
+</div></div>
+
+
+<div class="modal" id="moveModal"><div class="box">
+<h2>🔄 Add Room Move Details</h2><p style="color:#667085;font-size:13px;margin-top:-8px">Use this later when the new room and exact move time are confirmed.</p>
+<form id="moveForm"><div class="grid">
+<label>Room Number<input required name="previous" placeholder="Old room"></label>
+<label>Change Room Number<input required name="room" placeholder="New room"></label>
+<label>Guest Name<input required name="name"></label>
+<label>Marriott Membership<select name="member"><option>None</option><option>Member</option><option>Silver Elite</option><option>Gold Elite</option><option>Platinum Elite</option><option>Titanium Elite</option><option>Ambassador Elite</option></select></label>
+<label>Move Date<input type="date" required name="moveDate"></label>
+<label>Move Time<input type="time" required name="moveTime"></label>
+<label class="full">Reason<input name="moveReason" placeholder="Paid upgrade, guest request..."></label>
+</div><div class="actions"><button type="button" class="secondary" onclick="closeMove()">Cancel</button><button class="primary">Save Room Move</button></div></form>
+</div></div>
+
+<div class="modal" id="modal"><div class="box">
+<h2>Add Guest</h2>
+<form id="form" onsubmit="return addGuestSubmit(event)"><div class="grid">
+<label>Guest Name<input required name="name"></label>
+<label>Room Number<input required name="room"></label>
+<label>Meal Plan<select name="meal"><option>BB</option><option>HB</option><option>FB</option><option>AI</option><option>RO</option></select></label>
+<label>Marriott Membership<select name="member"><option>None</option><option>Member</option><option>Silver Elite</option><option>Gold Elite</option><option>Platinum Elite</option><option>Titanium Elite</option><option>Ambassador Elite</option></select></label>
+<label>Arrival Date<input type="date" required name="arrival"></label>
+<label>Departure Date<input type="date" required name="departure"></label><label>Travel Agent<input name="agent" placeholder="Travel agent / company"></label>
+<label>Celebration<select name="celebration"><option>None</option><option>Birthday</option><option>Anniversary</option><option>Honeymoon</option><option>Proposal</option><option>Graduation</option><option>Other</option></select></label>
+<label>EPIC Moment<input name="epic" placeholder="e.g. Surprise setup"></label><label>Status<select name="status"><option>Pending</option><option>Done</option></select></label><label>Room Move Planned?<select name="roomMovePlanned"><option value="No">No</option><option value="Yes">Yes</option></select></label>
+<label>Checkout Time<input type="time" name="checkoutTime"></label>
+<label class="full">Notes<textarea name="notes"></textarea></label>
+<div class="full" style="font-size:13px;color:#667085;background:#f7f9fc;padding:10px;border-radius:8px">If Room Move Planned is <b>Yes</b>, save the guest now. When the new room and move time are confirmed, use the separate <b>+ Room Move</b> button.</div>
+</div><div class="actions"><button type="button" class="secondary" onclick="closeGuest()">Cancel</button><button type="submit" class="primary">Save Guest</button></div></form>
+</div></div>
+<script>
+const KEY="personalInsiderGuests";
+let guests=JSON.parse(localStorage.getItem(KEY)||"[]");
+const today=new Date().toISOString().slice(0,10);
+document.getElementById("today").textContent=new Date().toLocaleDateString(undefined,{weekday:"long",day:"2-digit",month:"short",year:"numeric"});
+function save(){localStorage.setItem(KEY,JSON.stringify(guests));render()}
+
+function dateOnly(value){return value||""}
+function localDate(){
+  const d=new Date(); d.setHours(0,0,0,0);
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`;
+}
+function sortBy(a,b,key){return (a[key]||"9999-99-99").localeCompare(b[key]||"9999-99-99")}
+function sortRoomMoves(a,b){
+  const dateA=a.moveDate||"9999-99-99", dateB=b.moveDate||"9999-99-99";
+  if(dateA!==dateB) return dateA.localeCompare(dateB);
+  const timeA=a.moveTime||"99:99", timeB=b.moveTime||"99:99";
+  if(timeA!==timeB) return timeA.localeCompare(timeB);
+  return String(a.previous||"999999").localeCompare(String(b.previous||"999999"),undefined,{numeric:true});
+}
+function render(){
+  cleanupDeparted();
+  const todayLocal=localDate();
+
+  const arrivals=guests.filter(g=>g.arrival>=todayLocal).sort((a,b)=>sortBy(a,b,"arrival"));
+  const inhouse=guests.filter(g=>g.arrival<todayLocal && todayLocal<g.departure).sort((a,b)=>sortBy(a,b,"departure"));
+  const departures=guests.filter(g=>g.departure===todayLocal).sort((a,b)=>sortBy(a,b,"checkoutTime"));
+  const moves=guests.filter(g=>g.roomMovePlanned==="Yes" && g.previous && g.moveDate && g.moveDate>=todayLocal).sort(sortRoomMoves);
+
+  document.getElementById("count").textContent=inhouse.length;
+  document.getElementById("celebrations").textContent=guests.filter(g=>g.arrival<todayLocal && todayLocal<g.departure && g.celebration&&g.celebration!="None").length;
+  document.getElementById("moves").textContent=moves.length;
+  document.getElementById("departures").textContent=departures.length;
+
+  const arrivalRows=document.getElementById("arrivalRows"); arrivalRows.innerHTML="";
+  document.getElementById("arrivalEmpty").style.display=arrivals.length?"none":"block";
+  arrivals.forEach(g=>arrivalRows.insertAdjacentHTML("beforeend",`<tr>
+    <td>${esc(g.room)}</td><td><b>${esc(g.name)}</b></td><td>${esc(g.arrival)}</td><td>${esc(g.departure)}</td>
+    <td>${esc(g.agent||"—")}</td><td>${esc(g.celebration)}</td><td><span class="badge">${esc(g.member)}</span></td>
+    <td>${esc(g.epic||"—")}</td><td><span class="badge">${esc(g.roomMovePlanned==="Yes"?"Planned":"No")}</span></td><td><span class="badge">${esc(g.status||"Pending")}</span></td></tr>`));
+
+  const rows=document.getElementById("rows"); rows.innerHTML="";
+  document.getElementById("empty").style.display=inhouse.length?"none":"block";
+  inhouse.forEach(g=>rows.insertAdjacentHTML("beforeend",`<tr>
+    <td>${esc(g.room)}</td><td><b>${esc(g.name)}</b></td><td>${esc(g.arrival)}</td><td>${esc(g.departure)}</td>
+    <td>${esc(g.agent||"—")}</td><td>${esc(g.celebration)}</td><td><span class="badge">${esc(g.member)}</span></td>
+    <td>${esc(g.epic||"—")}</td><td><span class="badge">${esc(g.roomMovePlanned==="Yes"?"Planned":"No")}</span></td><td><span class="badge">${esc(g.status||"Pending")}</span></td></tr>`));
+
+  const mr=document.getElementById("moveRows"); mr.innerHTML="";
+  moves.forEach(g=>mr.insertAdjacentHTML("beforeend",
+    `<tr><td>${esc(g.previous)}</td><td>${esc(g.room)}</td><td>${esc(g.name)}</td><td>${esc(g.moveDate)}</td><td>${esc(g.moveTime||"—")}</td><td><span class="badge">${esc(g.member)}</span></td><td>${esc(g.moveReason||"—")}</td></tr>`));
+
+  const dr=document.getElementById("depRows"); dr.innerHTML="";
+  departures.forEach(g=>dr.insertAdjacentHTML("beforeend",
+    `<tr><td>${esc(g.room)}</td><td>${esc(g.name)}</td><td>${esc(g.departure)}</td><td>${esc(g.checkoutTime||"—")}</td><td><span class="badge">${esc(g.member)}</span></td></tr>`));
+}
+function esc(x){return String(x??"").replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"}[m]))}
+function openGuest(){document.getElementById("modal").classList.add("open")}
+function closeGuest(){document.getElementById("modal").classList.remove("open");document.getElementById("form").reset()}
+function addGuestSubmit(e){
+  e.preventDefault();
+  try{
+    const d=new FormData(document.getElementById("form"));
+    const v=Object.fromEntries(d.entries());
+    if(!v.name || !v.room || !v.arrival || !v.departure){
+      alert("Please fill Guest Name, Room Number, Arrival Date and Departure Date.");
+      return false;
+    }
+    if(v.departure < v.arrival){
+      alert("Departure date cannot be before Arrival date.");
+      return false;
+    }
+    v.roomMovePlanned=v.roomMovePlanned||"No";
+    guests.push(v);
+    localStorage.setItem(KEY,JSON.stringify(guests));
+    closeGuest();
+    render();
+    return false;
+  }catch(err){
+    alert("Could not save this guest. Please try again.");
+    console.error(err);
+    return false;
+  }
+}
+
+function clearAll(){if(confirm("Delete all guest data on this browser?")){guests=[];save()}}
+
+function openMove(){document.getElementById("moveModal").classList.add("open")}
+function closeMove(){document.getElementById("moveModal").classList.remove("open");document.getElementById("moveForm").reset()}
+function openDeparture(){document.getElementById("departureModal").classList.add("open")}
+function closeDeparture(){document.getElementById("departureModal").classList.remove("open");document.getElementById("departureForm").reset()}
+document.getElementById("moveForm").addEventListener("submit",e=>{e.preventDefault();const d=new FormData(e.target);const v=Object.fromEntries(d.entries());guests.push({name:v.name,room:v.room,previous:v.previous,member:v.member,moveDate:v.moveDate,moveTime:v.moveTime,moveReason:v.moveReason,meal:"—",arrival:"—",departure:"—",celebration:"None",epic:""});save();closeMove()});
+document.getElementById("departureForm").addEventListener("submit",e=>{e.preventDefault();const d=new FormData(e.target);const v=Object.fromEntries(d.entries());guests.push({name:v.name,room:v.room,member:v.member,departure:v.departure,checkoutTime:v.checkoutTime,transport:v.transport,notes:v.notes,meal:"—",arrival:"—",celebration:"None",epic:""});save();closeDeparture()});
+
+render();
+setInterval(render, 60000);
+</script>
+</body></html>
