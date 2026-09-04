@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Personal Insider - Guest Relations</title>
+<title>Personal Insider</title>
 <style>
 *{box-sizing:border-box}body{margin:0;font-family:Arial,sans-serif;background:#f5f7fa;color:#172033}
 header{background:#102a43;color:white;padding:22px 28px;display:flex;justify-content:space-between;align-items:center}
@@ -140,6 +140,14 @@ function dateOnly(value){return value||""}
 function localDate(){
   const d=new Date(); d.setHours(0,0,0,0);
   return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`;
+}
+function cleanupDeparted(){
+  const todayLocal=localDate();
+  const before=guests.length;
+  guests=guests.filter(g=>!g.departure || g.departure>=todayLocal);
+  if(guests.length!==before){
+    localStorage.setItem(KEY,JSON.stringify(guests));
+  }
 }
 function sortBy(a,b,key){return (a[key]||"9999-99-99").localeCompare(b[key]||"9999-99-99")}
 function sortRoomMoves(a,b){
